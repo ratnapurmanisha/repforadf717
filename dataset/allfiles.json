@@ -1,0 +1,18 @@
+{
+	"name": "allfiles",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_for_storageaccountfronaann2",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "filesfortask1",
+				"fileSystem": "inputfortask1"
+			}
+		}
+	}
+}

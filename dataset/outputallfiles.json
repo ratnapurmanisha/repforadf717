@@ -1,0 +1,18 @@
+{
+	"name": "outputallfiles",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_for_mythingsinthisstorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "firstfolderforinput",
+				"fileSystem": "inputthings"
+			}
+		}
+	}
+}
