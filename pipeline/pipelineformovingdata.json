@@ -194,6 +194,12 @@
 										"enablePartitionDiscovery": false
 									}
 								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
 								"enableStaging": false
 							},
 							"inputs": [
@@ -215,6 +221,23 @@
 										},
 										"sheetname": {
 											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "sinkformultisheet1",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@pipeline().parameters.sinkcontainer",
+											"type": "Expression"
+										},
+										"folder": "outputxlfiles",
+										"file": {
+											"value": "@concat(\n  split(pipeline().parameters.MultiSheetFileName, '.')[0],\n  '_',\n  item(),\n  '.xlsx'\n)",
 											"type": "Expression"
 										}
 									}
