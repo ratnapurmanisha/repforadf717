@@ -3,8 +3,8 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "Copydatafrom_one_storage_to_another",
-				"type": "Copy",
+				"name": "Getfilesfromfolder",
+				"type": "GetMetadata",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -15,40 +15,234 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"source": {
-						"type": "BinarySource",
-						"storeSettings": {
-							"type": "AzureBlobFSReadSettings",
-							"recursive": false,
-							"wildcardFileName": "*",
-							"deleteFilesAfterCompletion": false
-						},
-						"formatSettings": {
-							"type": "BinaryReadSettings"
+					"dataset": {
+						"referenceName": "forlistingfiles",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.srccontainer",
+								"type": "Expression"
+							},
+							"folder": {
+								"value": "@pipeline().parameters.srcfolder",
+								"type": "Expression"
+							}
 						}
 					},
-					"sink": {
-						"type": "BinarySink",
-						"storeSettings": {
-							"type": "AzureBlobFSWriteSettings"
-						}
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"enablePartitionDiscovery": false
 					},
-					"enableStaging": false
-				},
-				"inputs": [
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "Filter_singlefiles",
+				"type": "Filter",
+				"dependsOn": [
 					{
-						"referenceName": "allfiles",
-						"type": "DatasetReference"
+						"activity": "Getfilesfromfolder",
+						"dependencyConditions": [
+							"Succeeded"
+						]
 					}
 				],
-				"outputs": [
-					{
-						"referenceName": "outputallfiles",
-						"type": "DatasetReference"
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Getfilesfromfolder').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@not(equals(item().name, pipeline().parameters.MultiSheetFileName))",
+						"type": "Expression"
 					}
-				]
+				}
+			},
+			{
+				"name": "FEforcopy4siglefiles",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "Filter_singlefiles",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Filter_singlefiles').output.value",
+						"type": "Expression"
+					},
+					"batchCount": 1,
+					"activities": [
+						{
+							"name": "copysinglefile",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "forsinglefiles",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@pipeline().parameters.srccontainer",
+											"type": "Expression"
+										},
+										"folder": {
+											"value": "@pipeline().parameters.srcfolder",
+											"type": "Expression"
+										},
+										"file": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "forsinglefiles",
+									"type": "DatasetReference",
+									"parameters": {
+										"container": {
+											"value": "@pipeline().parameters.sinkcontainer",
+											"type": "Expression"
+										},
+										"folder": "xlfiles",
+										"file": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "splitmultisheet",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "FEforcopy4siglefiles",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.SheetNames",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Copysheettofile",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "ExcelSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "multisheetsource",
+									"type": "DatasetReference",
+									"parameters": {
+										"conatiner": {
+											"value": "@pipeline().parameters.srccontainer",
+											"type": "Expression"
+										},
+										"folder": {
+											"value": "@pipeline().parameters.srcfolder",
+											"type": "Expression"
+										},
+										"file": {
+											"value": "@pipeline().parameters.multisheetfilename",
+											"type": "Expression"
+										},
+										"sheetname": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
 			}
 		],
+		"parameters": {
+			"srccontainer": {
+				"type": "string"
+			},
+			"sinkcontainer": {
+				"type": "string"
+			},
+			"srcfolder": {
+				"type": "string"
+			},
+			"multisheetfilename": {
+				"type": "string"
+			},
+			"sheetnames": {
+				"type": "array",
+				"defaultValue": []
+			}
+		},
 		"annotations": []
 	}
 }
