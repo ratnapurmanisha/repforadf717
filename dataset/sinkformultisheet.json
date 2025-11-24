@@ -1,0 +1,42 @@
+{
+	"name": "sinkformultisheet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_for_mythingsinthisstorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"container": {
+				"type": "string"
+			},
+			"folder": {
+				"type": "string"
+			},
+			"file": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Excel",
+		"typeProperties": {
+			"sheetName": "firstfile",
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().file",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().folder",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().container",
+					"type": "Expression"
+				}
+			},
+			"firstRowAsHeader": true
+		},
+		"schema": []
+	}
+}
